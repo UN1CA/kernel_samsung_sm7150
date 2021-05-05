@@ -75,7 +75,7 @@ module_param_named(swap_opt_eff, swap_opt_eff, int, 0644);
  * OOM Killer will be called if the total number of
  * file pages (active) reaches this limit
  */
-static int free_file_limit = 36000;
+static int free_file_limit = 24000;
 module_param_named(free_file_limit, free_file_limit, int, 0644);
 
 /* Number of SWAP pages in MiB below which tasks should be killed */
