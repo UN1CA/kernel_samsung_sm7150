@@ -405,49 +405,51 @@ static const struct attribute *breath_attrs[] = {
 
 static int qpnp_tri_led_register(struct qpnp_tri_led_chip *chip)
 {
-	struct qpnp_led_dev *led;
-	int rc, i, j;
+	struct qpnp_led_dev *w = &chip->leds[0], *r;
+	int rc;
 
-	for (i = 0; i < chip->num_leds; i++) {
-		led = &chip->leds[i];
-		mutex_init(&led->lock);
-		led->cdev.name = led->label;
-		led->cdev.max_brightness = LED_FULL;
-		led->cdev.brightness_set_blocking = qpnp_tri_led_set_brightness;
-		led->cdev.brightness_get = qpnp_tri_led_get_brightness;
-		led->cdev.blink_set = qpnp_tri_led_set_blink;
-		led->cdev.default_trigger = led->default_trigger;
-		led->cdev.brightness = LED_OFF;
-		led->cdev.flags |= LED_KEEP_TRIGGER;
+	// init white
+	mutex_init(&w->lock);
+	w->cdev.name			   = "white";
+	w->cdev.max_brightness	 = LED_FULL;
+	w->cdev.brightness_set_blocking = qpnp_tri_led_set_brightness;
+	w->cdev.brightness_get		 = qpnp_tri_led_get_brightness;
+	w->cdev.blink_set			 = qpnp_tri_led_set_blink;
+	w->cdev.default_trigger	   = w->default_trigger;
+	w->cdev.brightness			= LED_OFF;
+	w->cdev.flags			   |= LED_KEEP_TRIGGER;
 
-		rc = devm_led_classdev_register(chip->dev, &led->cdev);
-		if (rc < 0) {
-			dev_err(chip->dev, "%s led class device registering failed, rc=%d\n",
-							led->label, rc);
-			goto err_out;
-		}
-
-		if (pwm_get_output_type_supported(led->pwm_dev)
-				& PWM_OUTPUT_MODULATED) {
-			rc = sysfs_create_files(&led->cdev.dev->kobj,
-					breath_attrs);
-			if (rc < 0) {
-				dev_err(chip->dev, "Create breath file for %s led failed, rc=%d\n",
-						led->label, rc);
-				goto err_out;
-			}
-		}
+	rc = devm_led_classdev_register(chip->dev, &w->cdev);
+	if (rc) {
+		dev_err(chip->dev, "white register failed %d\n", rc);
+		return rc;
 	}
+
+	// breath files if pwm supports
+	if (pwm_get_output_type_supported(w->pwm_dev) & PWM_OUTPUT_MODULATED)
+		sysfs_create_files(&w->cdev.dev->kobj, breath_attrs);
+
+	// alias red -> same hw
+	r = devm_kzalloc(chip->dev, sizeof(*r), GFP_KERNEL);
+	if (!r)
+		return -ENOMEM;
+	*r = *w;
+	r->cdev.name = "red";
+
+	rc = devm_led_classdev_register(chip->dev, &r->cdev);
+	if (rc) {
+		dev_err(chip->dev, "red alias failed %d\n", rc);
+		goto fail;
+	}
+
+	if (pwm_get_output_type_supported(r->pwm_dev) & PWM_OUTPUT_MODULATED)
+		sysfs_create_files(&r->cdev.dev->kobj, breath_attrs);
 
 	return 0;
 
-err_out:
-	for (j = 0; j <= i; j++) {
-		if (j < i)
-			sysfs_remove_files(&chip->leds[j].cdev.dev->kobj,
-					breath_attrs);
-		mutex_destroy(&chip->leds[j].lock);
-	}
+fail:
+	sysfs_remove_files(&w->cdev.dev->kobj, breath_attrs);
+	mutex_destroy(&w->lock);
 	return rc;
 }
 
