@@ -1285,8 +1285,7 @@ static void qpnp_flash_led_node_set(struct flash_node_data *fnode, int value)
 	fnode->cdev.brightness = prgm_current_ma;
 	fnode->current_reg_val = get_current_reg_code(prgm_current_ma,
 					fnode->ires_ua);
-	if (prgm_current_ma)
-		fnode->led_on = true;
+	fnode->led_on = (fnode->current_ma > 0);
 
 	if (pmic_subtype != PMI632_SUBTYPE &&
 	       led->pdata->chgr_mitigation_sel == FLASH_SW_CHARGER_MITIGATION) {
