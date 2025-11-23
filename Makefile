@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
 VERSION = 4
 PATCHLEVEL = 14
-SUBLEVEL = 368
+SUBLEVEL = 369
 EXTRAVERSION = -openela
 NAME = Petit Gorille
 
