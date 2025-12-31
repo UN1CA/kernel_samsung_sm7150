@@ -3358,8 +3358,10 @@ void scheduler_tick(void)
 		set_preferred_cluster(grp);
 	rcu_read_unlock();
 
+#ifdef CONFIG_SCHED_WALT
 	if (curr->sched_class == &fair_sched_class)
 		check_for_migration(rq, curr);
+#endif /* bye walt */	
 
 #ifdef CONFIG_SMP
 	rq_lock(rq, &rf);
@@ -4326,8 +4328,7 @@ static void __setscheduler_params(struct task_struct *p,
 	if (policy == SETPARAM_POLICY)
 		policy = p->policy;
 
-	/* Replace SCHED_FIFO with SCHED_RR to reduce latency */
-	p->policy = policy == SCHED_FIFO ? SCHED_RR : policy;
+	p->policy = policy;
 
 	if (dl_policy(policy))
 		__setparam_dl(p, attr);
