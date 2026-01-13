@@ -214,8 +214,6 @@ static void update_burst_score(struct sched_entity *se) {
 	se->burst_score = se->burst_penalty >> 2;
 
 	u8 new_prio = min(39, prio + se->burst_score);
-	if (new_prio != prev_prio)
-	 	reweight_task(p, new_prio);
 }
 
 static void update_burst_penalty(struct sched_entity *se) {
