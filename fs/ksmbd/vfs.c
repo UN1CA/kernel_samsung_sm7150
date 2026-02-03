@@ -664,8 +664,10 @@ static int check_lock_range(struct file *filp, loff_t start, loff_t end,
 	spin_lock(&ctx->flc_lock);
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 9, 0)
 	for_each_file_lock(flock, &ctx->flc_posix) {
-#else
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)
 	list_for_each_entry(flock, &ctx->flc_posix, fl_list) {
+#else
+        wait_event(flock->fl_wait, !flock->fl_next);
 #endif
 		/* check conflict locks */
 		if (flock->fl_end >= start && end >= flock->fl_start) {
